@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clothes-Cut · AI 옷입히기</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👗</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>👗 Clothes-Cut <span class="sub">AI 옷입히기 스튜디오</span></h1>
+    <button id="btn-api-key" class="ghost-btn" title="AI 생성용 API 키 설정">🔑 API 키</button>
+  </header>
+
+  <main class="layout">
+    <!-- ══════════ 1단계: 레퍼런스 & 모델 수 ══════════ -->
+    <section class="panel" id="panel-setup">
+      <h2><span class="step-no">1</span> 레퍼런스 사진 & 모델 수</h2>
+      <p class="hint">가이드 사진 한 장이 필요합니다. 사진 안에 <b>모델이 몇 명인지, 어떤 생김새인지</b> 정보가 담겨 있어야 합니다.</p>
+
+      <div id="ref-dropzone" class="ref-dropzone">
+        <input type="file" id="ref-input" accept="image/*" hidden />
+        <div class="ref-placeholder" id="ref-placeholder">
+          <span class="big-icon">📷</span>
+          <p>클릭 또는 드래그로 레퍼런스 사진 업로드</p>
+        </div>
+        <img id="ref-preview" class="ref-preview" alt="레퍼런스 미리보기" hidden />
+      </div>
+
+      <div class="model-count-row">
+        <label>모델 수</label>
+        <div class="count-buttons" id="model-count-buttons">
+          <button data-count="1">1명</button>
+          <button data-count="2" class="active">2명</button>
+          <button data-count="3">3명</button>
+          <button data-count="4">4명</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 2단계: 아이템 업로드 ══════════ -->
+    <section class="panel" id="panel-items">
+      <h2><span class="step-no">2</span> 아이템 준비</h2>
+      <p class="hint">옷/액세서리 사진을 업로드하고 종류를 지정하세요. 카드를 아바타의 <b>상체/하체 영역으로 드래그</b>하면 AI가 정확한 위치에 착장시킵니다.</p>
+
+      <div class="item-upload-row">
+        <input type="file" id="item-input" accept="image/*" multiple hidden />
+        <button id="btn-add-item" class="primary-btn">＋ 아이템 사진 추가</button>
+      </div>
+
+      <div class="item-legend">
+        <span class="tag upper">상의 계열: 티 · 아우터 · 시계 · 가방</span>
+        <span class="tag lower">하의 계열: 바지 · 신발 · 벨트</span>
+      </div>
+
+      <div id="item-palette" class="item-palette"></div>
+    </section>
+
+    <!-- ══════════ 3단계: 아바타 착장 ══════════ -->
+    <section class="panel wide" id="panel-avatars">
+      <h2><span class="step-no">3</span> 드래그로 착장하기</h2>
+      <p class="hint">아이템을 <b>상체 또는 하체 영역</b>에 놓기만 하면 됩니다. 신발을 하체에 드래그하면 자동으로 발 위치에 매칭됩니다. (2단계 드래그: 대략적 위치만 잡아주면 AI가 세부 위치를 결정)</p>
+      <div id="avatar-stage" class="avatar-stage"></div>
+    </section>
+
+    <!-- ══════════ 4단계: 깔맞춤 톤 ══════════ -->
+    <section class="panel" id="panel-tone">
+      <h2><span class="step-no">4</span> 깔맞춤 톤 선택 <span class="optional">(선택)</span></h2>
+
+      <div class="tone-step">
+        <h3>① 색깔 · 채도 선택</h3>
+        <div class="swatch-row" id="tone-swatches"></div>
+        <div class="tone-sliders">
+          <label>색상 <input type="range" id="tone-hue" min="0" max="360" value="220" /></label>
+          <label>채도 <input type="range" id="tone-sat" min="0" max="100" value="60" /></label>
+          <label>명도 <input type="range" id="tone-light" min="10" max="90" value="35" /></label>
+          <div class="tone-preview-wrap">
+            <div id="tone-preview" class="tone-preview"></div>
+            <span id="tone-name">네이비</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tone-step">
+        <h3>② 톤을 적용할 부위 선택</h3>
+        <p class="hint">아래 가이드라인에서 모델별로 깔맞춤할 부위를 클릭하세요. (상의·하의·신발 등 모든 부위 클릭 가능)</p>
+        <div id="tone-guideline" class="tone-guideline"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ 5단계: 생성 ══════════ -->
+    <section class="panel wide" id="panel-generate">
+      <h2><span class="step-no">5</span> 이미지 · 영상 생성</h2>
+      <div class="generate-row">
+        <button id="btn-generate-image" class="primary-btn big">🖼️ 이미지 생성</button>
+        <button id="btn-generate-video" class="primary-btn big" disabled title="이미지를 먼저 생성하세요">🎬 영상 생성</button>
+      </div>
+      <details class="prompt-details">
+        <summary>AI에게 전달될 착장 지시서 미리보기</summary>
+        <pre id="prompt-preview"></pre>
+      </details>
+      <div id="generate-status" class="generate-status"></div>
+      <div id="result-area" class="result-area"></div>
+    </section>
+  </main>
+
+  <!-- API 키 모달 -->
+  <dialog id="api-key-dialog">
+    <form method="dialog" class="api-key-form">
+      <h3>🔑 Gemini API 키 설정</h3>
+      <p class="hint">이미지 생성(Gemini 이미지 모델)과 영상 생성(Veo)에 사용됩니다. 키는 이 브라우저의 localStorage에만 저장됩니다.</p>
+      <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off" />
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost-btn">취소</button>
+        <button value="save" id="api-key-save" class="primary-btn">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/items.js"></script>
+  <script src="js/tone.js"></script>
+  <script src="js/prompt.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
