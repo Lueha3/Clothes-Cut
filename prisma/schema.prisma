@@ -1,0 +1,327 @@
+// ============================================================================
+// Clothes-Cut 데이터 모델 (MVP / M1)
+//
+// 설계 원칙
+//  1) profiles.id = Supabase auth.users.id (uuid) 를 그대로 쓴다.
+//     Prisma cuid PK 를 쓰면 RLS 의 `user_id = auth.uid()` 가 타입 불일치로
+//     항상 거짓이 되어 정책이 무력화된다. 조인 테이블 없이 uuid 비교가 되도록
+//     PK 자체를 auth 의 uuid 에 맞췄다.
+//  2) 테이블/컬럼은 snake_case(@@map/@map). RLS SQL·PostgREST 에서 따옴표 없이
+//     읽히는 이름이라 정책문이 짧아지고 오타가 줄어든다.
+//  3) uuid 는 DB(gen_random_uuid())가 만든다. Prisma 밖(SQL 마이그레이션·
+//     Supabase 클라이언트)에서 insert 해도 PK 가 비지 않는다.
+//  4) 색(hex) 형식 검증·아바타 10개 제한처럼 Prisma 가 표현하지 못하는 제약은
+//     prisma/rls.sql 에 CHECK/트리거로 둔다. 자세한 내용은 docs/DATA-MODEL.md.
+//
+// Prisma 7 주의: datasource 에 url/directUrl 을 쓸 수 없다(스키마에서 제거됨).
+// 접속 문자열은 루트 prisma.config.ts 의 datasource.url 로 옮겼고,
+// 런타임 접속은 PrismaClient 의 드라이버 어댑터가 담당한다(src/lib/db.ts).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// enum — 값 문자열은 src/lib/types.ts 의 유니온과 글자 단위로 같아야 한다.
+// 프론트/API 는 types.ts 를, DB 는 이 enum 을 보므로 둘이 어긋나면 런타임에서만
+// 터진다. 값을 고칠 때는 반드시 두 파일을 함께 고칠 것.
+// ---------------------------------------------------------------------------
+
+/// 아이템 7종. 드레스룸 슬롯 키이자 아이템 분류값(둘은 같은 축이다).
+enum ItemKind {
+  top
+  outer
+  watch
+  bag
+  pants
+  shoes
+  belt
+
+  @@map("item_kind")
+}
+
+/// 아바타 시트 생성 파이프라인 상태.
+enum AvatarStatus {
+  draft // 사진만 올라간 상태 — 아직 시트 없음
+  processing // 시트 생성 중
+  ready // 정면/측면/전신 확보, 생성에 쓸 수 있음
+  failed
+
+  @@map("avatar_status")
+}
+
+enum ProjectStatus {
+  draft
+  done
+  archived
+
+  @@map("project_status")
+}
+
+enum GenerationKind {
+  image
+  video
+
+  @@map("generation_kind")
+}
+
+enum GenerationStatus {
+  queued
+  running
+  done
+  failed
+
+  @@map("generation_status")
+}
+
+// ---------------------------------------------------------------------------
+// 계정
+// ---------------------------------------------------------------------------
+
+model Profile {
+  /// auth.users.id 와 동일한 uuid. FK 는 Prisma 가 auth 스키마를 모르므로
+  /// rls.sql 에서 references auth.users(id) on delete cascade 로 건다.
+  id          String   @id @db.Uuid
+  displayName String?  @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  avatars  Avatar[]
+  items    Item[]
+  palettes Palette[]
+  projects Project[]
+
+  @@map("profiles")
+}
+
+// ---------------------------------------------------------------------------
+// 아바타 — 계정 귀속 영구 자산. 사용자당 10개 제한은 rls.sql 트리거가 강제한다.
+// ---------------------------------------------------------------------------
+
+model Avatar {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  name String
+  tags String[] @default([])
+
+  /// 업로드한 레퍼런스 사진 경로 1~5장. 시트 재생성 때 다시 쓴다.
+  /// Storage 객체 경로(`{user_id}/...`)를 담고 공개 URL 은 담지 않는다 —
+  /// 버킷을 비공개로 바꿔도 데이터가 그대로 유효하도록.
+  sourceUrls String[] @default([]) @map("source_urls")
+
+  /// { "front": "...", "side": "...", "full": "..." } — 신원 기준 아바타 시트.
+  /// 컷이 늘어날 수 있어(뒷면 등) 컬럼 대신 Json 으로 둔다.
+  sheetUrls Json @default("{}") @map("sheet_urls")
+
+  status AvatarStatus @default(draft)
+  /// status = failed 일 때 사용자에게 보여줄 한 줄 사유.
+  error  String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile  Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("avatars")
+}
+
+// ---------------------------------------------------------------------------
+// 옷장 아이템
+// ---------------------------------------------------------------------------
+
+model Item {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  /// 비전 분류 결과이자 배정 가능한 슬롯. 사용자가 수정할 수 있다.
+  kind  ItemKind
+  /// 사용자가 붙인 이름("검정 라이더"). 없으면 UI 가 kind 라벨로 대체한다.
+  label String?
+
+  originalUrl String  @map("original_url")
+  /// 배경 제거 결과. 처리 전/실패면 null 이라 UI 는 originalUrl 로 폴백한다.
+  cutoutUrl   String? @map("cutout_url")
+
+  /// { "L": 32.1, "a": 4.2, "b": -18.7 } — 대표색(CIELab).
+  /// M2 Color QC 가 생성 결과 측정색과 CIEDE2000 으로 비교할 기준값이라
+  /// hex 가 아니라 Lab 원본을 남긴다.
+  baseColorLab Json?   @map("base_color_lab")
+  /// 위 Lab 을 sRGB 로 되돌린 표시용 값. "팔레트에 담을까요?" 칩에 바로 쓴다.
+  baseColorHex String? @map("base_color_hex")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots   OutfitSlot[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, kind])
+  @@map("items")
+}
+
+// ---------------------------------------------------------------------------
+// 팔레트 — 색 통일의 단일 진실
+// ---------------------------------------------------------------------------
+
+model Palette {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  /// null 이면 계정 전역 팔레트(여러 프로젝트가 공유), 값이 있으면 그 프로젝트 전용.
+  projectId String? @map("project_id") @db.Uuid
+
+  name String
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tokens  PaletteToken[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("palettes")
+}
+
+model PaletteToken {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paletteId String @map("palette_id") @db.Uuid
+
+  /// 사람이 읽는 이름("NAVY"). 같은 팔레트 안에서 유일해야 색 지정이 헷갈리지 않는다.
+  label String
+  /// "#1B2A4A" 7자 고정. 형식 검증은 rls.sql 의 CHECK 제약.
+  hex   String @db.VarChar(7)
+
+  /// 칩 노출 순서. 사용자가 자주 쓰는 색을 앞으로 끌어다 놓을 수 있게.
+  sortOrder Int @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  palette Palette      @relation(fields: [paletteId], references: [id], onDelete: Cascade)
+  slots   OutfitSlot[]
+
+  @@unique([paletteId, label])
+  @@index([paletteId, sortOrder])
+  @@map("palette_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// 프로젝트(착장 한 벌)
+// ---------------------------------------------------------------------------
+
+model Project {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  /// 이 착장을 입을 아바타. onDelete: Restrict 라서 참조 중인 아바타는 바로
+  /// 지워지지 않는다 — 기획의 "삭제 시 참조 프로젝트 경고"를 DB 가 뒷받침한다.
+  avatarId String @map("avatar_id") @db.Uuid
+
+  title  String        @default("새 착장")
+  status ProjectStatus @default(draft)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile     Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatar      Avatar       @relation(fields: [avatarId], references: [id], onDelete: Restrict)
+  slots       OutfitSlot[]
+  generations Generation[]
+  palettes    Palette[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([avatarId])
+  @@map("projects")
+}
+
+/// 착장 한 칸. 한 프로젝트의 한 슬롯에는 아이템이 하나뿐이라 (project_id, slot) 유니크.
+model OutfitSlot {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId String @map("project_id") @db.Uuid
+
+  slot   ItemKind
+  itemId String   @map("item_id") @db.Uuid
+
+  /// 색 지정 방식 두 가지. 토큰이 우선이고, 토큰이 없을 때만 custom_hex 를 본다.
+  /// token_id 가 M2 Color QC 의 입력이다 — 생성 결과에서 이 부위의 Lab 대표색을
+  /// 측정해 토큰 hex 와 CIEDE2000(ΔE) 로 비교하고, 어긋나면 부분 재생성한다.
+  /// 그래서 MVP 에서 QC 를 안 돌려도 지정 이력은 지금부터 쌓아 둔다.
+  tokenId   String? @map("token_id") @db.Uuid
+  /// 토큰 없이 즉석에서 고른 색. 형식 검증은 rls.sql 의 CHECK 제약.
+  customHex String? @map("custom_hex") @db.VarChar(7)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  item    Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  /// 토큰을 지우면 착장은 남기고 색 지정만 푼다(SetNull). 착장까지 사라지면
+  /// 사용자가 팔레트를 정리했을 뿐인데 옷이 벗겨지는 꼴이 된다.
+  token   PaletteToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, slot])
+  @@index([itemId])
+  @@index([tokenId])
+  @@map("outfit_slots")
+}
+
+// ---------------------------------------------------------------------------
+// 생성물
+// ---------------------------------------------------------------------------
+
+model Generation {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId String @map("project_id") @db.Uuid
+
+  kind   GenerationKind
+  status GenerationStatus @default(queued)
+
+  /// 실제로 모델에 보낸 착장 지시서 전문. 나중에 프롬프트 컴파일러가 바뀌어도
+  /// 이 결과물이 무엇으로 만들어졌는지 재현할 수 있어야 한다.
+  promptSnapshot String @map("prompt_snapshot") @db.Text
+  /// 입력 참조 스냅샷: 아바타 시트 URL, 아이템 컷아웃 URL, 슬롯별 확정 hex 등.
+  /// 아이템을 나중에 지워도 이 생성물의 입력 기록은 남는다.
+  inputRefs      Json   @default("{}") @map("input_refs")
+
+  resultUrl String? @map("result_url")
+
+  /// 어댑터가 실제로 고른 벤더/모델("gemini-2.5-flash-image", "veo-3.x").
+  provider       String?
+  /// Veo predictLongRunning 의 operation name. 폴링이 이 값으로 진행을 조회한다.
+  providerOpName String? @map("provider_op_name")
+
+  error String? @db.Text
+
+  /// 영상은 이미지 결과를 시작 프레임으로 삼는다. 라이브러리에서 이미지-영상을
+  /// 한 묶음으로 보여주기 위해 참조를 FK 로 남긴다.
+  sourceGenerationId String? @map("source_generation_id") @db.Uuid
+
+  /// 큐 대기/실행 시간 측정용. 오래 running 인 작업을 스위퍼가 실패 처리한다.
+  startedAt   DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  source  Generation?  @relation("GenerationLineage", fields: [sourceGenerationId], references: [id], onDelete: SetNull)
+  derived Generation[] @relation("GenerationLineage")
+
+  @@index([projectId, createdAt(sort: Desc)])
+  /// 하단 탭 배지의 "진행 중 N건" 집계 경로.
+  @@index([projectId, status])
+  /// 멈춘 작업 스위퍼(오래된 queued/running 정리)용.
+  @@index([status, createdAt])
+  @@index([sourceGenerationId])
+  @@map("generations")
+}

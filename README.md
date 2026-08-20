@@ -1,46 +1,76 @@
-# 👗 Clothes-Cut — AI 옷입히기 스튜디오
+# 👗 Clothes-Cut
 
-옷 사진을 아바타의 신체 부위(**상체/하체 2분할**)에 드래그해서 붙이면, AI가 알아서 해당 위치에 아이템을 착장시키고 **이미지 + 영상**까지 생성해 주는 웹 프로그램입니다.
+> 아바타에 옷을 입히고 색을 맞춰, 숏폼 한 편까지. **오늘의 착장, 10분이면 돼요.**
 
-> 예) 신발 이미지를 하체 쪽에 드래그하면 → AI가 알아서 **발** 위치에 신발을 매칭
+숏폼 패션 크리에이터를 위한 **모바일 웹** AI 옷입히기 스튜디오.
+사진 몇 장으로 만든 평생 아바타(최대 10명)에 옷 사진을 드래그해 입히고, 색은 팔레트 토큰으로
+정확히 깔맞춘 뒤, 이미지와 영상까지 한 화면에서 뽑는다.
 
-## 실행 방법
+- 📋 [기획안](./docs/PLAN.md) · 🛠 [MVP 개발계획](./docs/MVP-DEV-PLAN.md)
+- 🗄 [데이터 모델](./docs/DATA-MODEL.md) · 🤖 [AI 게이트웨이](./docs/AI-GATEWAY.md)
 
-빌드 도구가 필요 없는 순수 HTML/CSS/JS 앱입니다.
+## 개발 상태
+
+**M1 MVP · W0(기반 구축) 완료** — 앱 셸·디자인 시스템·데이터 계층·AI 어댑터·탭 화면 뼈대까지.
+기능 구현(아바타 저장 → 드래그 착장 → 리컬러 → 생성)은 W1~W6에서 붙인다.
+
+| 마일스톤 | 상태 |
+|---|---|
+| M0 프로토타입 | ✅ 완료 → [`prototype/`](./prototype) 에 보관 |
+| **M1 W0** 스캐폴드·디자인 토큰·어댑터 | ✅ 완료 |
+| M1 W1~W6 기능 구현 | ⏳ 예정 |
+
+## 실행
 
 ```bash
-# 아무 정적 서버로 열면 됩니다
-python3 -m http.server 8080
-# → http://localhost:8080 접속
+npm install
+cp .env.local.example .env.local   # 값을 채운다 (Supabase · Gemini · fal)
+npx prisma generate
+npm run dev                        # http://localhost:3000
 ```
 
-이미지·영상 생성에는 [Google AI Studio](https://aistudio.google.com/apikey)에서 발급한 **Gemini API 키**가 필요합니다. 앱 우측 상단 `🔑 API 키` 버튼으로 등록하세요(브라우저 localStorage에만 저장됩니다).
+검증:
 
-- 이미지 생성: `gemini-2.5-flash-image` (레퍼런스 + 아이템 사진 합성 편집)
-- 영상 생성: `veo-3.0-generate-001` (생성된 착장 이미지 → 영상)
+```bash
+npx next typegen && npx tsc --noEmit   # 타입 (typegen 이 반드시 선행)
+npm run lint
+npm run build
+npx prisma validate
+```
 
-## 사용 흐름
+DB를 처음 세팅할 때는 마이그레이션 적용 후 **반드시** `prisma/rls.sql` 을 실행한다
+(RLS를 켜지 않은 테이블은 anon 키로 전부 읽힌다). 자세한 절차는 [DATA-MODEL.md](./docs/DATA-MODEL.md).
 
-1. **레퍼런스 사진 업로드** — 가이드 사진 한 장이 필요합니다. 사진 안에 모델이 몇 명인지, 어떤 생김새인지 정보가 담겨 있어야 합니다.
-2. **모델 수 선택** — 1명 / 2명 / 3명 / 4명 선택 가능.
-3. **아이템 사진 추가** — 종류를 지정합니다(파일명으로 자동 추측, 카드에서 변경 가능).
-   - 상의 계열: 티 · 아우터 · 시계 · 가방
-   - 하의 계열: 바지 · 신발 · 벨트
-4. **드래그 착장 (2단계 드래그)** — 아이템 카드를 모델 아바타의 상체/하체 영역에 놓기만 하면, 아이템 종류에 따라 정밀 위치(발·손목·허리 등)로 자동 스냅됩니다. 영역이 어긋나도(신발을 상체에 드롭 등) AI가 올바른 부위로 자동 매칭합니다.
-5. **깔맞춤 톤 선택 (선택)**
-   1. 색깔·채도 선택 (프리셋 스와치 또는 HSL 슬라이더)
-   2. 가이드라인에서 모델별로 톤을 맞출 부위 클릭 (상의·하의·신발 등 모든 부위 가능)
-   - 예: 네이비 선택 → 왼쪽 모델은 상의+벨트, 오른쪽 모델은 하의+시계에 네이비 톤 적용
-6. **이미지 생성 → 영상 생성** — 착장 지시서(프롬프트 미리보기에서 확인 가능)와 함께 레퍼런스·아이템 이미지가 AI에 전달되어 착장 이미지가 생성되고, 이어서 그 이미지로 런웨이 스타일 영상을 만듭니다.
-
-## 파일 구조
+## 구조
 
 ```
-index.html      # 5단계 UI 레이아웃
-style.css       # 스타일
-js/items.js     # 아이템 종류 정의 (소속 영역 + 정밀 앵커 위치)
-js/tone.js      # 깔맞춤 톤 상태 (색·채도 + 모델별 부위 선택)
-js/prompt.js    # AI 착장 지시서(프롬프트) 빌더
-js/api.js       # Gemini 이미지 / Veo 영상 API 연동
-js/app.js       # 메인 앱 (드래그&드롭, 아바타 렌더링, 생성 흐름)
+src/app/            5개 탭(/ · /dresser · /create · /closet · /my) + 루트 레이아웃
+src/components/     Header · BottomTabBar · icons
+src/components/ui/  GlassCard · BottomSheet · Button · Chip · Skeleton · Toast
+src/lib/types.ts    도메인 정본 — 아이템 7종과 신체 앵커 좌표(SLOT_META)
+src/lib/ai/         벤더 교체 가능한 AI 어댑터 (앱 코드는 gateway 하나만 import)
+  ├ prompt.ts       착장 지시서 컴파일러 (순수 함수)
+  ├ color.ts        Lab 변환 · CIEDE2000 · 대표색 추출 · 리컬러
+  └ providers/      Gemini 이미지 · Veo 영상 · fal 배경제거
+src/lib/supabase/   브라우저 / 서버 클라이언트
+prisma/             schema.prisma · rls.sql (RLS · 아바타 10개 제한 트리거 · Storage 정책)
+prototype/          M0 정적 프로토타입 (보관용, 개발 중단)
 ```
+
+## 디자인
+
+꿈꾸는교회 동아리 앱의 **"꿈꾸는 하늘"** 디자인 시스템을 이식하고 액센트만 교체했다.
+하늘 그라데이션 배경 · frosted glass 서피스 · 잉크 텍스트는 그대로, 골드→**코랄**, 틸→**플럼**.
+
+| 역할 | 토큰 | 대비 |
+|---|---|---|
+| 주 액센트 | `coral` #FF6B52 · `coral-deep` #D93E22 · `coral-ink` #B83518 | CTA 흰 텍스트 4.50 · 본문 5.56 |
+| 보조 액센트 | `plum` #8E3B72 · `plum-deep` #6E2A58 | CTA 흰 텍스트 6.96 · 본문 6.55 |
+
+> `coral` #FF6B52 는 **장식 전용**이다(흰 배경 대비 2.81). 텍스트에는 `coral-ink` 나 `plum` 을 쓴다.
+
+제품 특성상 둔 예외 3가지:
+
+1. **드레스룸 캔버스는 무채색**(`.canvas-surface`) — 색이 있는 배경은 옷 색 판단을 왜곡한다.
+2. **브랜드 액센트 ≠ 사용자 팔레트** — 사용자 색 칩에는 항상 HEX 라벨을 함께 노출한다.
+3. **글래스 성능 가드** — 화면당 `backdrop-filter` 3~4개 상한(헤더·탭바·시트), 본문 카드와 캔버스는 blur 없음.
