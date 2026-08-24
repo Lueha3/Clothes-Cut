@@ -8,6 +8,7 @@
 
 - 📋 [기획안](./docs/PLAN.md) · 🛠 [MVP 개발계획](./docs/MVP-DEV-PLAN.md)
 - 🗄 [데이터 모델](./docs/DATA-MODEL.md) · 🤖 [AI 게이트웨이](./docs/AI-GATEWAY.md)
+- 🎬 [영상 프롬프트 템플릿](./docs/VIDEO-PROMPT-TEMPLATE.md)
 
 ## 개발 상태
 
