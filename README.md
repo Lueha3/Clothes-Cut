@@ -8,6 +8,7 @@
 
 - 📋 [기획안](./docs/PLAN.md) · 🛠 [MVP 개발계획](./docs/MVP-DEV-PLAN.md)
 - 🗄 [데이터 모델](./docs/DATA-MODEL.md) · 🤖 [AI 게이트웨이](./docs/AI-GATEWAY.md)
+- 🎬 [레퍼런스 티어다운](./docs/REF-LOOKBOOK-TEARDOWN.md) — 룩북 숏폼 1편 분해 → 프롬프트·파라미터 역산
 
 ## 개발 상태
 
