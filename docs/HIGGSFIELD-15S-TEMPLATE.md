@@ -53,12 +53,15 @@ v1 의 "슬로우모션처럼 보이는" 문제를 구조적으로 제거했다.
 
 타임라인 (트림 불필요, 전부 하드컷):
 
-| 컷 | 시작 | 끝 | 컬러 조합 | 무드 |
-|---|---|---|---|---|
-| 1 | 00:00 | 00:04 | Camel + Cream | warm |
-| 2 | 00:04 | 00:08 | Camel + White | clean |
-| 3 | 00:08 | 00:12 | Burgundy + Cream | classic |
-| 4 | 00:12 | 00:16 | Burgundy + Black | powerful |
+| 컷 | 시작 | 끝 | 착장 | 컬러 조합 | 무드 |
+|---|---|---|---|---|---|
+| 1 | 00:00 | 00:04 | 크림 니트폴로+네이비 슬랙스 / 네이비 오픈셔츠+아이보리 와이드 | Navy + Cream | soft |
+| 2 | 00:04 | 00:08 | 네이비 코치자켓+타이 / 네이비 폴로 레이어드+숄더백, 배기 데님 | Navy + Denim | easy |
+| 3 | 00:08 | 00:12 | 차콜 하프집+프린지 스카프 / 네이비 폴로+차콜 와이드 | Charcoal + Navy | sharp |
+| 4 | 00:12 | 00:16 | 블랙 워크자켓+올리브 와이드 / 카키 자켓+다크 데님, 커피 | Olive + Black | bold |
+
+> 컬러 조합은 **레퍼런스 영상의 Camel/Burgundy 가 아니라 실제 소스 이미지 4장의 팔레트**다.
+> 레퍼런스에서 가져온 것은 포맷(4초×4컷·하드컷·상단 오버레이)이지 색이 아니다.
 
 > 정확히 15초가 필요하면 컷당 3.75초로 트림한다. 단 레퍼런스와 동일하게 가려면 16초가 맞다.
 
@@ -68,9 +71,10 @@ v1 의 "슬로우모션처럼 보이는" 문제를 구조적으로 제거했다.
 
 ```text
 Editorial fashion lookbook film, shot at normal real-time speed.
-A couple standing in a bright cream neoclassical room: tall paneled walls, a large
-multi-pane window with soft diffused daylight on the left, a cream boucle sofa behind
-them, polished beige stone floor. Warm neutral color grade, soft natural light,
+Two Korean male models in a bright beige neoclassical room: tall cream paneled walls,
+a large multi-pane window with soft diffused daylight on the left, a light oak open
+shelving unit at the left edge, a cream boucle curved sofa behind them on the right,
+polished beige stone floor. Muted warm neutral color grade, soft natural light,
 9:16 vertical, full-body framing, cinematic 35mm look.
 Faces, hair, outfits and accessories stay exactly as in the source image.
 Real-time motion at 1x speed. Natural human movement tempo.
@@ -116,12 +120,15 @@ Outfit: ______________ / ______________.
 |---|---|
 | 시선 전환 | both turn their heads from the window to the camera together |
 | 걸어 들어오기 | both take two steps toward the camera and stop |
-| 반바퀴 턴 | she turns a half circle, the pleated skirt sweeping out, and stops facing camera |
+| 몸 회전 | he pivots from profile to face the camera and squares his shoulders |
 | 재킷 | he opens the jacket by the lapel and pushes one hand into his pocket |
-| 가방 | she swings the bag forward and holds it with both hands in front |
+| 주머니 | he pulls one hand out of his pocket and straightens the front of his shirt |
+| 가방 | he shrugs the shoulder bag strap higher and lets it settle |
+| 스카프 | he draws the fringed scarf up over his forearm and lets the fringe swing |
 | 체중 이동 | he shifts his weight to the other leg and squares his shoulders |
-| 각도 | she pivots to a three-quarter angle and drops one shoulder |
+| 각도 | he pivots to a three-quarter angle and drops one shoulder |
 | 소매 | he pushes one sleeve up to the forearm |
+| 컵 | he raises the paper cup, takes one sip, and lowers it |
 
 **모델당 1개, 컷당 최대 2개.** 더 넣으면 손·얼굴이 무너진다.
 
@@ -145,7 +152,7 @@ AI 영상 모델은 글자를 안정적으로 못 쓴다. 네거티브에 `text,
 | 항목 | 값 |
 |---|---|
 | 위치 | 상단 중앙, 세이프에어리어 상단에서 약 8% 아래 |
-| 1행 | 세리프 볼드, 착장의 메인 컬러(카멜 `#8B5E3C` / 버건디 `#6E1F2A`)와 크림 `#F2EAE0` 2톤 |
+| 1행 | 세리프 볼드, 착장의 메인 컬러와 크림 `#F2EAE0` 2톤. 컷별 메인: 네이비 `#1E2A44` · 데님 `#7B93B5` · 차콜 `#3A3D42` · 올리브 `#5A5B3C` |
 | 2행 | 소문자 세리프, 1행의 40% 크기, 화이트, 자간 넓게 |
 | 문구 | `{메인컬러} + {서브컬러}` / `{무드 한 단어}` |
 | 등장 | 컷 시작과 동시에, 페이드 없이(하드컷 리듬 유지) |
@@ -154,85 +161,94 @@ AI 영상 모델은 글자를 안정적으로 못 쓴다. 네거티브에 `text,
 
 ## 6. 완성 프롬프트 4개 (복붙용)
 
-### 컷 1 — Camel + Cream / warm
+### 컷 1 — Navy + Cream / soft
 
 ```text
 Editorial fashion lookbook film, shot at normal real-time speed.
-A couple standing in a bright cream neoclassical room: tall paneled walls, a large
-multi-pane window with soft diffused daylight on the left, a cream boucle sofa behind
-them, polished beige stone floor. Warm neutral color grade, soft natural light,
+Two Korean male models in a bright beige neoclassical room: tall cream paneled walls,
+a large multi-pane window with soft diffused daylight on the left, a light oak open
+shelving unit at the left edge, a cream boucle curved sofa behind them on the right,
+polished beige stone floor. Muted warm neutral color grade, soft natural light,
 9:16 vertical, full-body framing, cinematic 35mm look.
 Faces, hair, outfits and accessories stay exactly as in the source image.
 Real-time motion at 1x speed. Natural human movement tempo.
 
 Action beat (4 seconds, real-time):
-0.0-0.6s — both are looking toward the window on the left.
-0.6-2.4s — they turn their heads to the camera together at a normal, unhurried but
-clearly visible speed; she swings the tan leather bag forward and holds it with both
-hands in front of her; he pulls one hand out of his pocket and straightens the front
-of his camel blazer.
+0.0-0.6s — both are mid-stride, faces turned toward the window on the left.
+0.6-2.4s — they take two more walking steps forward and turn their heads to the camera
+together at a normal, clearly visible speed; the model in the cream knit polo pulls his
+hand out of his pocket and lets his arm swing once; the open navy shirt of the other
+model swings open with the step, showing the white ribbed tank underneath.
 2.4-4.0s — hold the final pose, steady gaze into camera, natural breathing.
 
 Camera: locked-off static tripod shot, no zoom, no push in, no camera movement.
-Outfit: camel oversized blazer over a cream satin slip dress / camel blazer over a
-white tee with cream wide trousers.
+Outfit: cream long-sleeve knit polo with navy pleated wide trousers, black belt, black
+loafers / open navy shirt over a white ribbed tank with ivory wide trousers, black belt,
+black loafers.
 ```
 
-### 컷 2 — Camel + White / clean
+### 컷 2 — Navy + Denim / easy
 
 ```text
 Editorial fashion lookbook film, shot at normal real-time speed.
-A couple standing in a bright cream neoclassical room: tall paneled walls, a large
-multi-pane window with soft diffused daylight on the left, a cream boucle sofa behind
-them, polished beige stone floor. Warm neutral color grade, soft natural light,
+Two Korean male models in a bright beige neoclassical room: tall cream paneled walls,
+a large multi-pane window with soft diffused daylight on the left, a light oak open
+shelving unit at the left edge, a cream boucle curved sofa behind them on the right,
+polished beige stone floor. Muted warm neutral color grade, soft natural light,
 9:16 vertical, full-body framing, cinematic 35mm look.
 Faces, hair, outfits and accessories stay exactly as in the source image.
 Real-time motion at 1x speed. Natural human movement tempo.
 
 Action beat (4 seconds, real-time):
-0.0-0.6s — both stand square to the camera, arms relaxed at their sides.
-0.6-2.4s — she takes one clear step forward and pivots to a three-quarter angle,
-letting the quilted cream bag swing once on its chain; he shifts his weight onto the
-other leg, pushes one hand into his trouser pocket and squares his shoulders.
+0.0-0.6s — both stand square to the camera, hands in their denim pockets.
+0.6-2.4s — the model in the navy coach jacket takes one clear step forward, grabs the
+front of his jacket and pulls it open, the black tie swinging; the other model shrugs
+the shoulder bag strap higher, lets it settle, and pivots to a three-quarter angle.
+The wide denim legs swing with the movement.
 2.4-4.0s — hold the final pose, steady gaze into camera, natural breathing.
 
 Camera: locked-off static tripod shot, slightly low angle, no zoom, no push in,
 no camera movement.
-Outfit: white off-shoulder knit top with camel wide pleated trousers / ribbed camel
-polo knit with cream wide trousers and a brown belt.
+Outfit: navy coach jacket over a white shirt with a black tie, light-wash baggy denim,
+black belt, black loafers / navy short-sleeve polo layered over a white collared shirt,
+black shoulder bag, light-wash baggy denim, brown loafers.
 ```
 
-### 컷 3 — Burgundy + Cream / classic
+### 컷 3 — Charcoal + Navy / sharp
 
 ```text
 Editorial fashion lookbook film, shot at normal real-time speed.
-A couple standing in a bright cream neoclassical room: tall paneled walls, a large
-multi-pane window with soft diffused daylight on the left, a cream boucle sofa behind
-them, polished beige stone floor. Warm neutral color grade, soft natural light,
+Two Korean male models in a bright beige neoclassical room: tall cream paneled walls,
+a large multi-pane window with soft diffused daylight on the left, a light oak open
+shelving unit at the left edge, a cream boucle curved sofa behind them on the right,
+polished beige stone floor. Muted warm neutral color grade, soft natural light,
 9:16 vertical, full-body framing, cinematic 35mm look.
 Faces, hair, outfits and accessories stay exactly as in the source image.
 Real-time motion at 1x speed. Natural human movement tempo.
 
 Action beat (4 seconds, real-time):
-0.0-0.6s — both stand facing the camera, she holds the burgundy top-handle bag low.
-0.6-2.4s — she turns a half circle in place, the cream pleated skirt sweeping out and
-settling, and stops facing the camera; he opens his burgundy blazer by the lapel and
-pushes one hand into his pocket. Her long hair swings with the turn.
-2.4-4.0s — hold the final pose, the skirt pleats still settling, steady gaze into
+0.0-0.6s — both stand in profile, facing the window on the left.
+0.6-2.4s — the model in the charcoal half-zip knit draws the fringed charcoal scarf up
+over his forearm, the fringe swinging; the model in the navy polo pivots his whole body
+from profile to face the camera and squares his shoulders. The wide trouser legs swing
+and settle with the pivot.
+2.4-4.0s — hold the final pose, the scarf fringe still settling, steady gaze into
 camera, natural breathing.
 
 Camera: locked-off static tripod shot, no zoom, no push in, no camera movement.
-Outfit: burgundy fitted knit top with a cream pleated midi skirt / burgundy blazer over
-a cream knit with cream wide trousers.
+Outfit: charcoal ribbed half-zip knit with a white tee underneath, navy pleated wide
+trousers, fringed charcoal scarf, black loafers / navy short-sleeve knit polo with
+charcoal wide pleated trousers, black belt, black sandals.
 ```
 
-### 컷 4 — Burgundy + Black / powerful
+### 컷 4 — Olive + Black / bold
 
 ```text
 Editorial fashion lookbook film, shot at normal real-time speed.
-A couple standing in a bright cream neoclassical room: tall paneled walls, a large
-multi-pane window with soft diffused daylight on the left, a cream boucle sofa behind
-them, polished beige stone floor. Warm neutral color grade, soft natural light,
+Two Korean male models in a bright beige neoclassical room: tall cream paneled walls,
+a large multi-pane window with soft diffused daylight on the left, a light oak open
+shelving unit at the left edge, a cream boucle curved sofa behind them on the right,
+polished beige stone floor. Muted warm neutral color grade, soft natural light,
 9:16 vertical, full-body framing, cinematic 35mm look.
 Faces, hair, outfits and accessories stay exactly as in the source image.
 Real-time motion at 1x speed. Natural human movement tempo.
@@ -240,15 +256,17 @@ Real-time motion at 1x speed. Natural human movement tempo.
 Action beat (4 seconds, real-time):
 0.0-0.6s — both stand deeper in the room, full body visible with headroom above.
 0.6-2.4s — they walk two confident steps straight toward the camera and stop, so the
-framing naturally tightens from full body to knee-up. The burgundy leather skirt and
-the black wide trousers move with each step.
+framing naturally tightens from full body to knee-up; the model in the khaki jacket
+raises the paper coffee cup, takes one sip and lowers it. The very wide olive and
+indigo trouser legs swing heavily with each step.
 2.4-4.0s — hold the final pose, chins slightly lifted, direct gaze into camera,
 natural breathing.
 
 Camera: locked-off static tripod shot, no zoom, no push in, no camera movement.
 The subjects get closer by walking, not by zooming.
-Outfit: black square-neck top with a burgundy leather midi skirt / burgundy blazer over
-a black turtleneck with black wide trousers.
+Outfit: black work jacket with silver hardware over a charcoal knit, olive-green very
+wide trousers, brown loafers / khaki jacket with a brown corduroy collar over a white
+tee, dark indigo very wide denim, black loafers, holding a paper coffee cup.
 ```
 
 ---
@@ -274,5 +292,5 @@ a black turtleneck with black wide trousers.
 | 얼굴이 뭉개진다 | 액션 비트를 모델당 1개로 줄인다. Motion 7 이상은 쓰지 않는다 |
 | 손이 이상하다 | 손을 주머니에 넣거나 가방을 쥐는 지시로 바꾼다 |
 | 글자가 깨져 나온다 | 네거티브의 `text, watermark, subtitles` 유지 → 편집에서 얹는다 (5번) |
-| 턴 동작에서 몸이 녹는다 | 반바퀴(half circle)까지만. 한바퀴는 어떤 모델도 못 버틴다 |
+| 회전 동작에서 몸이 녹는다 | 정면↔측면(90도)까지만. 반바퀴 이상 돌리면 어떤 모델도 못 버틴다 |
 | 컷마다 톤이 다르다 | 모델·Seed 통일 확인. 그래도 다르면 편집에서 LUT 한 장으로 맞춘다 |
