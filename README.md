@@ -8,7 +8,7 @@
 
 - 📋 [기획안](./docs/PLAN.md) · 🛠 [MVP 개발계획](./docs/MVP-DEV-PLAN.md)
 - 🗄 [데이터 모델](./docs/DATA-MODEL.md) · 🤖 [AI 게이트웨이](./docs/AI-GATEWAY.md)
-- 🎬 [Higgsfield 16초 4컷 룩북 템플릿 v4](./docs/HIGGSFIELD-15S-TEMPLATE.md)
+- 🎬 [Higgsfield 룩북 템플릿 v5 (프롬프트 1개, 이미지만 교체)](./docs/HIGGSFIELD-15S-TEMPLATE.md)
 
 ## 개발 상태
 
